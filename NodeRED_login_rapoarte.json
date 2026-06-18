@@ -1,0 +1,828 @@
+[
+  {
+    "id": "tab_auth",
+    "type": "tab",
+    "label": "Login & Rapoarte",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "db_users",
+    "type": "sqlitedb",
+    "db": "users.db",
+    "mode": "RWC",
+    "name": "users.db"
+  },
+  {
+    "id": "inj_init",
+    "type": "inject",
+    "z": "tab_auth",
+    "name": "Init (creeaza tabele)",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "0.5",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 150,
+    "y": 60,
+    "wires": [
+      [
+        "fn_init"
+      ]
+    ]
+  },
+  {
+    "id": "fn_init",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "creaza tabele + pret",
+    "func": "global.set('pretKwh', 1.30);\nconst m1 = { topic: \"CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, pass_hash TEXT, salt TEXT)\" };\nconst m2 = { topic: \"CREATE TABLE IF NOT EXISTS daily (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, zi TEXT, consum_kwh REAL, cost_lei REAL)\" };\nreturn [[m1, m2]];\n",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 60,
+    "wires": [
+      [
+        "sqlite_init"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_init",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "msg.topic",
+    "sql": "",
+    "name": "create tables",
+    "x": 620,
+    "y": 60,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "ui_menu_template",
+    "type": "ui_template",
+    "z": "tab_auth",
+    "group": "group_power",
+    "name": "Meniu + culori (head global)",
+    "order": 0,
+    "width": 0,
+    "height": 0,
+    "format": "<style>\n/* bara de sus -> bej deschis, titlu -> maro */\n.nr-dashboard-theme md-toolbar, md-toolbar, .md-toolbar-tools, #mainToolbar{background-color:#fbf3e2 !important;color:#7a4f12 !important;}\n.nr-dashboard-theme md-toolbar .md-toolbar-tools span, md-toolbar .md-toolbar-tools span, .md-toolbar-tools h1, .md-toolbar-tools h2{color:#7a4f12 !important;}\n/* titlurile de grup -> maro inchis */\n.nr-dashboard-theme .nr-dashboard-cardtitle, .nr-dashboard-cardtitle, nr-dashboard-card .nr-dashboard-cardtitle, .nr-dashboard-cardpanel .nr-dashboard-cardtitle{color:#7a4f12 !important;}\n/* butonul meniu */\n#meniuBtn{display:inline-flex;align-items:center;gap:9px;margin-left:auto;background:transparent;border:0;color:#7a4f12 !important;font-size:17px;font-weight:600;cursor:pointer;padding:6px 12px;font-family:system-ui,Arial}\n#meniuBtn .bars{font-size:20px;line-height:1}\n#meniuBox{position:absolute;top:54px;right:16px;background:#fffdf8;border:1px solid #e6d3b0;border-radius:12px;box-shadow:0 12px 34px rgba(150,100,40,.28);overflow:hidden;z-index:99999;min-width:190px;display:none}\n#meniuBox a{display:block;padding:13px 18px;color:#5a3d12;text-decoration:none;font-size:15px;font-family:system-ui,Arial}\n#meniuBox a:hover{background:#fbeccb}\n#meniuBox a.danger{color:#b3261e}\n</style>\n<script>\n(function(){\n  function inject(){\n    var tools=document.querySelector('.md-toolbar-tools')||document.querySelector('md-toolbar');\n    if(!tools||document.getElementById('meniuBtn'))return;\n    var btn=document.createElement('button');btn.id='meniuBtn';btn.type='button';\n    btn.innerHTML='<span class=\"bars\">&#9776;</span> Meniu';\n    var box=document.createElement('div');box.id='meniuBox';\n    box.innerHTML='<a href=\"/rapoarte\">Rapoarte</a><a href=\"/logout\">Deconectare</a><a class=\"danger\" href=\"/sterge-cont\">Stergere cont</a>';\n    btn.addEventListener('click',function(e){e.stopPropagation();box.style.display=(box.style.display==='block')?'none':'block';});\n    document.addEventListener('click',function(){box.style.display='none';});\n    tools.appendChild(btn);document.body.appendChild(box);\n  }\n  var t=setInterval(function(){if(document.querySelector('.md-toolbar-tools')){inject();}},500);\n  setTimeout(function(){clearInterval(t);},15000);\n})();\n</script>",
+    "storeOutMessages": true,
+    "fwdInMessages": true,
+    "resendOnRefresh": true,
+    "templateScope": "global",
+    "className": "",
+    "x": 420,
+    "y": 130,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "http_reg_get",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /register",
+    "url": "/register",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 210,
+    "wires": [
+      [
+        "fn_reg_form"
+      ]
+    ]
+  },
+  {
+    "id": "fn_reg_form",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "pagina register",
+    "func": "const err = (msg.req.query || {}).err;\nlet e = '';\nif (err === 'mail') e = '<p class=\"err\">Adresa de e-mail nu este valida.</p>';\nelse if (err === 'parola') e = '<p class=\"err\">Parola nu indeplineste conditiile.</p>';\nelse if (err === '1') e = '<p class=\"err\">Date invalide.</p>';\nmsg.headers = { 'Content-Type': 'text/html; charset=utf-8' };\nmsg.payload = `<!doctype html><html lang=\"ro\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Inregistrare</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:#3a2e1f;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(circle at 18% 22%,rgba(255,214,140,.55),transparent 38%),radial-gradient(circle at 82% 18%,rgba(255,191,120,.45),transparent 40%),radial-gradient(circle at 75% 85%,rgba(255,224,170,.55),transparent 42%),linear-gradient(135deg,#fff8ec 0%,#ffefd6 55%,#ffe6c2 100%)}body::before{content:'';position:absolute;inset:0;background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20200%20250%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%23c8901f%27%20stroke-width%3D%275%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%27100%27%20cy%3D%2795%27%20r%3D%2758%27/%3E%3Cpath%20d%3D%27M78%20153%20h44%20M82%20170%20h36%20M88%20186%20h24%27/%3E%3Cpath%20d%3D%27M100%206%20v16%20M28%2034%20l12%2011%20M172%2034%20l-12%2011%20M10%20105%20h16%20M174%20105%20h16%27/%3E%3Cpath%20d%3D%27M84%2095%20q16%20-22%2032%200%27%20stroke-width%3D%274%27/%3E%3C/g%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:center 20%;background-size:660px;opacity:.10;pointer-events:none}.brand{text-align:center;margin-bottom:20px;z-index:1}.brand h1{font-size:38px;margin:0;letter-spacing:.5px;color:#7a4f12;font-weight:700}.brand .quote{font-size:18px;font-style:italic;color:#a06b1e;margin-top:8px}.card{z-index:1;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid rgba(180,140,80,.28);padding:36px;border-radius:18px;width:410px;box-shadow:0 18px 50px rgba(150,100,40,.18)}.card h2{margin:0 0 20px;font-size:23px;color:#5a3d12}label{font-size:15px;color:#6b5230;font-weight:600}input{width:100%;box-sizing:border-box;padding:15px;margin:8px 0 6px;border-radius:11px;border:1px solid #e0c9a0;background:#fffdf8;color:#3a2e1f;font-size:17px}input:focus{outline:none;border-color:#e0a955;box-shadow:0 0 0 3px rgba(224,169,85,.25)}button{width:100%;padding:15px;margin-top:18px;border:0;border-radius:12px;background:linear-gradient(135deg,#f5a623,#e8890c);color:#fff;font-size:18px;font-weight:600;cursor:pointer}button:disabled{background:#e6d3b0;cursor:not-allowed}.foot{margin-top:18px;text-align:center;font-size:15px}a{color:#c4760a;text-decoration:none;font-weight:600}.err{color:#c0392b;font-size:14px;margin:0 0 10px;text-align:center}.rules{list-style:none;padding:0;margin:8px 0 0;font-size:13.5px}.rules li{color:#9a7b4f;padding:2px 0}.rules li.ok{color:#2e7d32}.rules li::before{content:'○  '}.rules li.ok::before{content:'✓  '}</style></head><body><div class=\"brand\"><h1>Iluminat Inteligent</h1><div class=\"quote\">„Fiecare spațiu merită lumina potrivită!”</div></div><div class=\"card\"><h2>Creeaza cont</h2>${e}<form method=\"POST\" action=\"/register\"><label>E-mail</label><input id=\"email\" name=\"email\" type=\"email\" placeholder=\"nume@exemplu.com\" required autofocus><label>Parola</label><input id=\"password\" name=\"password\" type=\"password\" placeholder=\"Parola puternica\" required><ul class=\"rules\"><li id=\"r_len\">Minim 8 caractere</li><li id=\"r_low\">O litera mica</li><li id=\"r_up\">O litera mare</li><li id=\"r_num\">O cifra</li><li id=\"r_sym\">Un semn de punctuatie</li></ul><button id=\"btn\" type=\"submit\" disabled>Inregistreaza-te</button></form><div class=\"foot\">Ai deja cont? <a href=\"/login\">Conecteaza-te</a></div></div><script>var email=document.getElementById('email');var pass=document.getElementById('password');var btn=document.getElementById('btn');var rules=[['len',function(p){return p.length>=8;}],['low',function(p){return /[a-z]/.test(p);}],['up',function(p){return /[A-Z]/.test(p);}],['num',function(p){return /[0-9]/.test(p);}],['sym',function(p){return /[^A-Za-z0-9]/.test(p);}]];function check(){var p=pass.value;var allp=true;rules.forEach(function(r){var ok=r[1](p);document.getElementById('r_'+r[0]).classList.toggle('ok',ok);if(!ok)allp=false;});var okMail=email.checkValidity()&&email.value.length>0;btn.disabled=!(allp&&okMail);}email.addEventListener('input',check);pass.addEventListener('input',check);check();</script></body></html>`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 210,
+    "wires": [
+      [
+        "resp_reg_get"
+      ]
+    ]
+  },
+  {
+    "id": "resp_reg_get",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 620,
+    "y": 210,
+    "wires": []
+  },
+  {
+    "id": "http_reg_post",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "POST /register",
+    "url": "/register",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 270,
+    "wires": [
+      [
+        "fn_reg_hash"
+      ]
+    ]
+  },
+  {
+    "id": "fn_reg_hash",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "valideaza + hash",
+    "func": "const crypto = global.get('cryptoLib');\nconst b = msg.payload || {};\nconst email = (b.email || '').trim();\nconst password = b.password || '';\nconst reEmail = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\nif (!reEmail.test(email)) { msg.statusCode=302; msg.headers={Location:'/register?err=mail'}; msg.payload=''; return [null, msg]; }\nconst strong = password.length>=8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password);\nif (!strong) { msg.statusCode=302; msg.headers={Location:'/register?err=parola'}; msg.payload=''; return [null, msg]; }\nconst salt = crypto.randomBytes(16).toString('hex');\nconst hash = crypto.scryptSync(password, salt, 64).toString('hex');\nmsg.params = { $u: email, $h: hash, $s: salt };\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 370,
+    "y": 270,
+    "wires": [
+      [
+        "sqlite_reg"
+      ],
+      [
+        "resp_reg_post"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_reg",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "INSERT OR IGNORE INTO users(username,pass_hash,salt) VALUES($u,$h,$s)",
+    "name": "insert user",
+    "x": 600,
+    "y": 262,
+    "wires": [
+      [
+        "fn_reg_done"
+      ]
+    ]
+  },
+  {
+    "id": "fn_reg_done",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "-> /login",
+    "func": "msg.statusCode=302; msg.headers={Location:'/login'}; msg.payload=''; return msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 810,
+    "y": 262,
+    "wires": [
+      [
+        "resp_reg_post"
+      ]
+    ]
+  },
+  {
+    "id": "resp_reg_post",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 1000,
+    "y": 270,
+    "wires": []
+  },
+  {
+    "id": "http_log_get",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /login",
+    "url": "/login",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 360,
+    "wires": [
+      [
+        "sqlite_log_count"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_log_count",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "fixed",
+    "sql": "SELECT COUNT(*) AS n FROM users",
+    "name": "count users",
+    "x": 360,
+    "y": 360,
+    "wires": [
+      [
+        "fn_log_form"
+      ]
+    ]
+  },
+  {
+    "id": "fn_log_form",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "pagina login",
+    "func": "const n = (msg.payload && msg.payload[0]) ? msg.payload[0].n : 0;\nif (n === 0) { msg.statusCode=302; msg.headers={Location:'/register'}; msg.payload=''; return msg; }\nconst err = (msg.req.query || {}).err;\nconst e = err === '1' ? '<p class=\"err\">Date gresite. Incearca din nou.</p>' : '';\nmsg.headers = { 'Content-Type': 'text/html; charset=utf-8' };\nmsg.payload = `<!doctype html><html lang=\"ro\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Autentificare</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:#3a2e1f;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background:radial-gradient(circle at 18% 22%,rgba(255,214,140,.55),transparent 38%),radial-gradient(circle at 82% 18%,rgba(255,191,120,.45),transparent 40%),radial-gradient(circle at 75% 85%,rgba(255,224,170,.55),transparent 42%),linear-gradient(135deg,#fff8ec 0%,#ffefd6 55%,#ffe6c2 100%)}body::before{content:'';position:absolute;inset:0;background-image:url(\"data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20200%20250%27%3E%3Cg%20fill%3D%27none%27%20stroke%3D%27%23c8901f%27%20stroke-width%3D%275%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%3E%3Ccircle%20cx%3D%27100%27%20cy%3D%2795%27%20r%3D%2758%27/%3E%3Cpath%20d%3D%27M78%20153%20h44%20M82%20170%20h36%20M88%20186%20h24%27/%3E%3Cpath%20d%3D%27M100%206%20v16%20M28%2034%20l12%2011%20M172%2034%20l-12%2011%20M10%20105%20h16%20M174%20105%20h16%27/%3E%3Cpath%20d%3D%27M84%2095%20q16%20-22%2032%200%27%20stroke-width%3D%274%27/%3E%3C/g%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:center 20%;background-size:660px;opacity:.10;pointer-events:none}.brand{text-align:center;margin-bottom:20px;z-index:1}.brand h1{font-size:38px;margin:0;letter-spacing:.5px;color:#7a4f12;font-weight:700}.brand .quote{font-size:18px;font-style:italic;color:#a06b1e;margin-top:8px}.card{z-index:1;background:rgba(255,255,255,.82);backdrop-filter:blur(6px);border:1px solid rgba(180,140,80,.28);padding:36px;border-radius:18px;width:410px;box-shadow:0 18px 50px rgba(150,100,40,.18)}.card h2{margin:0 0 20px;font-size:23px;color:#5a3d12}label{font-size:15px;color:#6b5230;font-weight:600}input{width:100%;box-sizing:border-box;padding:15px;margin:8px 0 6px;border-radius:11px;border:1px solid #e0c9a0;background:#fffdf8;color:#3a2e1f;font-size:17px}input:focus{outline:none;border-color:#e0a955;box-shadow:0 0 0 3px rgba(224,169,85,.25)}button{width:100%;padding:15px;margin-top:18px;border:0;border-radius:12px;background:linear-gradient(135deg,#f5a623,#e8890c);color:#fff;font-size:18px;font-weight:600;cursor:pointer}button:disabled{background:#e6d3b0;cursor:not-allowed}.foot{margin-top:18px;text-align:center;font-size:15px}a{color:#c4760a;text-decoration:none;font-weight:600}.err{color:#c0392b;font-size:14px;margin:0 0 10px;text-align:center}.rules{list-style:none;padding:0;margin:8px 0 0;font-size:13.5px}.rules li{color:#9a7b4f;padding:2px 0}.rules li.ok{color:#2e7d32}.rules li::before{content:'○  '}.rules li.ok::before{content:'✓  '}</style></head><body><div class=\"brand\"><h1>Iluminat Inteligent</h1><div class=\"quote\">„Fiecare spațiu merită lumina potrivită!”</div></div><div class=\"card\"><h2>Conectare</h2>${e}<form method=\"POST\" action=\"/login\"><label>E-mail</label><input name=\"email\" type=\"email\" placeholder=\"nume@exemplu.com\" required autofocus><label>Parola</label><input name=\"password\" type=\"password\" placeholder=\"Parola\" required><button type=\"submit\">Conecteaza-te</button></form><div class=\"foot\">Nu ai cont? <a href=\"/register\">Inregistreaza-te</a></div></div></body></html>`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 580,
+    "y": 360,
+    "wires": [
+      [
+        "resp_log_get"
+      ]
+    ]
+  },
+  {
+    "id": "resp_log_get",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 790,
+    "y": 360,
+    "wires": []
+  },
+  {
+    "id": "http_log_post",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "POST /login",
+    "url": "/login",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 420,
+    "wires": [
+      [
+        "fn_log_prep"
+      ]
+    ]
+  },
+  {
+    "id": "fn_log_prep",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "pregateste select",
+    "func": "const b = msg.payload || {};\nmsg.uname = (b.email || '').trim();\nmsg.pw = b.password || '';\nmsg.params = { $u: msg.uname };\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 360,
+    "y": 420,
+    "wires": [
+      [
+        "sqlite_log_sel"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_log_sel",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "SELECT * FROM users WHERE username = $u",
+    "name": "select user",
+    "x": 580,
+    "y": 420,
+    "wires": [
+      [
+        "fn_log_verify"
+      ]
+    ]
+  },
+  {
+    "id": "fn_log_verify",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "verifica + cookie",
+    "func": "const crypto = global.get('cryptoLib');\nconst SECRET = '123456789';\nconst rows = msg.payload || [];\nif (rows.length === 0) { msg.statusCode=302; msg.headers={Location:'/register'}; msg.payload=''; return msg; }\nconst u = rows[0];\nconst hash = crypto.scryptSync(msg.pw, u.salt, 64).toString('hex');\nif (hash !== u.pass_hash) { msg.statusCode=302; msg.headers={Location:'/login?err=1'}; msg.payload=''; return msg; }\nconst exp = Date.now() + 8*3600*1000;\nconst payload = Buffer.from(u.username + '|' + exp).toString('base64');\nconst sig = crypto.createHmac('sha256', SECRET).update(payload).digest('hex');\nconst token = payload + '.' + sig;\nglobal.set('currentUser', u.username);\nmsg.statusCode = 302;\nmsg.headers = { 'Set-Cookie': 'session=' + token + '; Path=/; HttpOnly; Max-Age=28800', Location: '/ui' };\nmsg.payload = '';\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 800,
+    "y": 420,
+    "wires": [
+      [
+        "resp_log_post"
+      ]
+    ]
+  },
+  {
+    "id": "resp_log_post",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 1010,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "http_logout",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /logout",
+    "url": "/logout",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 500,
+    "wires": [
+      [
+        "fn_logout"
+      ]
+    ]
+  },
+  {
+    "id": "fn_logout",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "sterge cookie",
+    "func": "msg.statusCode=302;\nmsg.headers={ 'Set-Cookie':'session=; Path=/; Max-Age=0', Location:'/login' };\nmsg.payload=''; return msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 370,
+    "y": 500,
+    "wires": [
+      [
+        "resp_logout"
+      ]
+    ]
+  },
+  {
+    "id": "resp_logout",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 580,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "http_del_get",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /sterge-cont",
+    "url": "/sterge-cont",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 590,
+    "wires": [
+      [
+        "fn_del_page"
+      ]
+    ]
+  },
+  {
+    "id": "fn_del_page",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "pagina confirmare",
+    "func": "msg.headers={'Content-Type':'text/html; charset=utf-8'};\nmsg.payload = `<!doctype html><html lang=\"ro\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Stergere cont</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:'Segoe UI',system-ui,Arial;color:#3a2e1f;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,rgba(255,214,140,.5),transparent 45%),linear-gradient(135deg,#fff8ec,#ffe6c2)}.card{background:rgba(255,255,255,.9);border:1px solid rgba(180,140,80,.3);border-radius:18px;padding:36px;width:430px;text-align:center;box-shadow:0 18px 50px rgba(150,100,40,.18)}.card h2{color:#7a4f12;font-size:22px;margin:0 0 10px}.card p{color:#5a3d12;font-size:16px;margin:0 0 24px}.row{display:flex;gap:14px}.row a,.row button{flex:1;padding:14px;border-radius:12px;font-size:16px;font-weight:600;border:0;cursor:pointer;text-decoration:none;display:block}.da{background:#b3261e;color:#fff}.nu{background:#e9dcc2;color:#5a3d12}</style></head><body><div class=\"card\"><h2>Stergere cont</h2><p>Esti sigur ca doresti sa stergi contul definitiv?</p><div class=\"row\"><form method=\"POST\" action=\"/sterge-cont\" style=\"flex:1;margin:0\"><button class=\"da\" type=\"submit\">Da</button></form><a class=\"nu\" href=\"/ui\">Nu</a></div></div></body></html>`;\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 400,
+    "y": 590,
+    "wires": [
+      [
+        "resp_del_get"
+      ]
+    ]
+  },
+  {
+    "id": "resp_del_get",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 620,
+    "y": 590,
+    "wires": []
+  },
+  {
+    "id": "http_del_post",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "POST /sterge-cont",
+    "url": "/sterge-cont",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 650,
+    "wires": [
+      [
+        "fn_del_prep"
+      ]
+    ]
+  },
+  {
+    "id": "fn_del_prep",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "cine sterge",
+    "func": "const crypto = global.get('cryptoLib');\nconst SECRET='123456789';\nfunction userFromReq(req){\n  const cookies=(req.headers.cookie||'').split(';').map(c=>c.trim());\n  const tok=(cookies.find(c=>c.startsWith('session='))||'').slice(8);\n  const parts=tok.split('.'); const payload=parts[0], sig=parts[1];\n  if(!payload||!sig) return null;\n  const good=crypto.createHmac('sha256',SECRET).update(payload).digest('hex');\n  if(good!==sig) return null;\n  const dec=Buffer.from(payload,'base64').toString().split('|');\n  if(Date.now()>=Number(dec[1])) return null;\n  return dec[0];\n}\nconst user = userFromReq(msg.req);\nif(!user){ msg.statusCode=302; msg.headers={Location:'/login'}; msg.payload=''; return [null, msg]; }\nmsg.params = { $u: user };\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 380,
+    "y": 650,
+    "wires": [
+      [
+        "sqlite_del_user"
+      ],
+      [
+        "resp_del_post"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_del_user",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "DELETE FROM users WHERE username = $u",
+    "name": "sterge user",
+    "x": 600,
+    "y": 640,
+    "wires": [
+      [
+        "sqlite_del_daily"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_del_daily",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "DELETE FROM daily WHERE username = $u",
+    "name": "sterge rapoarte",
+    "x": 790,
+    "y": 640,
+    "wires": [
+      [
+        "fn_del_done"
+      ]
+    ]
+  },
+  {
+    "id": "fn_del_done",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "cookie off -> /login",
+    "func": "msg.statusCode=302;\nmsg.headers={ 'Set-Cookie':'session=; Path=/; Max-Age=0', Location:'/login' };\nmsg.payload=''; return msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1000,
+    "y": 640,
+    "wires": [
+      [
+        "resp_del_post"
+      ]
+    ]
+  },
+  {
+    "id": "resp_del_post",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 1010,
+    "y": 700,
+    "wires": []
+  },
+  {
+    "id": "mqtt_cost",
+    "type": "mqtt in",
+    "z": "tab_auth",
+    "name": "INA219 (cost)",
+    "topic": "home/power/ina219",
+    "qos": "0",
+    "datatype": "json",
+    "broker": "broker_esp32",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 780,
+    "wires": [
+      [
+        "fn_cost"
+      ]
+    ]
+  },
+  {
+    "id": "fn_cost",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "calcul cost/kWh",
+    "func": "const PRET = global.get('pretKwh') || 1.30;\nconst now = Date.now();\nconst last = context.get('lastTs') || now;\nconst dtH = (now - last) / 3600000;\ncontext.set('lastTs', now);\nconst pW = (msg.payload.power_mW || 0) / 1000;\nconst dKwh = (pW / 1000) * dtH;\nlet kwh = (global.get('kwhZi') || 0) + dKwh;\nglobal.set('kwhZi', kwh);\nconst cost = kwh * PRET;\nreturn [ { payload: cost.toFixed(4) }, { payload: kwh.toFixed(5) } ];",
+    "outputs": 2,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 370,
+    "y": 780,
+    "wires": [
+      [
+        "ui_cost_lei"
+      ],
+      [
+        "ui_cost_kwh"
+      ]
+    ]
+  },
+  {
+    "id": "ui_cost_lei",
+    "type": "ui_text",
+    "z": "tab_auth",
+    "group": "group_power",
+    "order": 20,
+    "width": 0,
+    "height": 0,
+    "name": "",
+    "label": "Cost estimat astăzi",
+    "format": "{{msg.payload}} lei",
+    "layout": "row-spread",
+    "className": "",
+    "x": 625,
+    "y": 760,
+    "wires": []
+  },
+  {
+    "id": "ui_cost_kwh",
+    "type": "ui_text",
+    "z": "tab_auth",
+    "group": "group_power",
+    "order": 21,
+    "width": 0,
+    "height": 0,
+    "name": "",
+    "label": "Consum estimat astăzi",
+    "format": "{{msg.payload}} kWh",
+    "layout": "row-spread",
+    "className": "",
+    "x": 628,
+    "y": 800,
+    "wires": []
+  },
+  {
+    "id": "inj_eod",
+    "type": "inject",
+    "z": "tab_auth",
+    "name": "23:59 salveaza ziua",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "59 23 * * *",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 160,
+    "y": 880,
+    "wires": [
+      [
+        "fn_eod"
+      ]
+    ]
+  },
+  {
+    "id": "fn_eod",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "raport zi + reset",
+    "func": "const PRET = global.get('pretKwh') || 1.30;\nconst user = global.get('currentUser') || 'necunoscut';\nconst kwh = global.get('kwhZi') || 0;\nconst cost = kwh * PRET;\nconst zi = new Date().toLocaleDateString('en-CA');\nglobal.set('kwhZi', 0);\nmsg.params = { $u: user, $z: zi, $k: kwh, $c: cost };\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 390,
+    "y": 880,
+    "wires": [
+      [
+        "sqlite_eod"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_eod",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "INSERT INTO daily(username,zi,consum_kwh,cost_lei) VALUES($u,$z,$k,$c)",
+    "name": "insert raport",
+    "x": 620,
+    "y": 880,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "http_rapoarte_get",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /rapoarte",
+    "url": "/rapoarte",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 150,
+    "y": 960,
+    "wires": [
+      [
+        "tpl_rapoarte"
+      ]
+    ]
+  },
+  {
+    "id": "tpl_rapoarte",
+    "type": "template",
+    "z": "tab_auth",
+    "name": "pagina rapoarte",
+    "field": "payload",
+    "fieldType": "msg",
+    "format": "handlebars",
+    "syntax": "plain",
+    "template": "<!doctype html><html lang=\"ro\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Rapoarte consum</title>\n<style>\n:root{--bg:#fff7ea;--card:#fffdf8;--line:#ecd9b6;--txt:#3a2e1f;--mut:#9a7b4f;--acc:#c4760a;--ok:#2e7d32}\n*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial;background:var(--bg);color:var(--txt)}\nheader{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}\nheader h1{font-size:25px;margin:0;color:#7a4f12}header a{color:var(--acc);text-decoration:none;font-size:16px;margin-left:18px;font-weight:600}\n.wrap{display:grid;grid-template-columns:260px 260px 1fr;gap:24px;padding:32px;max-width:1200px}\n.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;min-height:250px}\n.panel h2{font-size:16px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut);margin:0 0 16px}\n.item{padding:15px 17px;border-radius:10px;cursor:pointer;margin-bottom:9px;border:1px solid transparent;font-size:18px}\n.item:hover{background:#fbeccb}.item.active{background:#fbe0b0;border-color:var(--acc)}\n.kpi{font-size:50px;font-weight:700;margin:14px 0;color:#5a3d12}.kpi.lei{color:var(--ok)}\n.muted{color:var(--mut);font-size:18px}.empty{color:var(--mut);font-size:17px;padding:12px 0}\n</style></head><body>\n<header><h1>Iluminat Inteligent &middot; Rapoartele mele</h1>\n<div><a href=\"/ui\">Dashboard</a><a href=\"/logout\">Deconectare</a></div></header>\n<div class=\"wrap\">\n  <div class=\"panel\"><h2>Luni</h2><div id=\"luni\"></div></div>\n  <div class=\"panel\"><h2>Zile</h2><div id=\"zile\"><div class=\"empty\">Alege o luna</div></div></div>\n  <div class=\"panel\"><h2>Raport zi</h2><div id=\"raport\"><div class=\"empty\">Alege o zi</div></div></div>\n</div>\n<script>\nlet data=[];\nconst LUNI=['Ian','Feb','Mar','Apr','Mai','Iun','Iul','Aug','Sep','Oct','Noi','Dec'];\nconst fmtLuna=ym=>{const p=ym.split('-');return LUNI[+p[1]-1]+' '+p[0];};\nconst $=id=>document.getElementById(id);\nasync function load(){\n  try{ data=await (await fetch('/api/rapoarte')).json(); }catch(e){ data=[]; }\n  renderLuni();\n}\nfunction renderLuni(){\n  const luni=[...new Set(data.map(d=>d.zi.slice(0,7)))].sort().reverse();\n  const el=$('luni'); el.innerHTML='';\n  if(!luni.length){ el.innerHTML='<div class=\"empty\">Niciun raport inca</div>'; return; }\n  luni.forEach(l=>{\n    const d=document.createElement('div'); d.className='item'; d.textContent=fmtLuna(l);\n    d.onclick=()=>selLuna(l,d); el.appendChild(d);\n  });\n}\nfunction selLuna(l,node){\n  [...$('luni').children].forEach(c=>c.classList.remove('active')); node.classList.add('active');\n  const zile=data.filter(d=>d.zi.slice(0,7)===l).sort((a,b)=>b.zi.localeCompare(a.zi));\n  const el=$('zile'); el.innerHTML='';\n  if(!zile.length){ el.innerHTML='<div class=\"empty\">Nicio zi</div>'; }\n  zile.forEach(z=>{\n    const d=document.createElement('div'); d.className='item'; d.textContent=z.zi;\n    d.onclick=()=>selZi(z,d); el.appendChild(d);\n  });\n  $('raport').innerHTML='<div class=\"empty\">Alege o zi</div>';\n}\nfunction selZi(z,node){\n  [...$('zile').children].forEach(c=>c.classList.remove('active')); node.classList.add('active');\n  $('raport').innerHTML =\n    '<div class=\"muted\">'+z.zi+'</div>'+\n    '<div class=\"kpi\">'+Number(z.consum_kwh).toFixed(5)+' <span class=\"muted\">kWh</span></div>'+\n    '<div class=\"kpi lei\">'+Number(z.cost_lei).toFixed(4)+' <span class=\"muted\">lei</span></div>';\n}\nload();\n</script></body></html>",
+    "output": "str",
+    "x": 380,
+    "y": 960,
+    "wires": [
+      [
+        "resp_rapoarte"
+      ]
+    ]
+  },
+  {
+    "id": "resp_rapoarte",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {
+      "content-type": "text/html; charset=utf-8"
+    },
+    "x": 600,
+    "y": 960,
+    "wires": []
+  },
+  {
+    "id": "http_api_rapoarte",
+    "type": "http in",
+    "z": "tab_auth",
+    "name": "GET /api/rapoarte",
+    "url": "/api/rapoarte",
+    "method": "get",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 160,
+    "y": 1030,
+    "wires": [
+      [
+        "fn_api_user"
+      ]
+    ]
+  },
+  {
+    "id": "fn_api_user",
+    "type": "function",
+    "z": "tab_auth",
+    "name": "filtru utilizator",
+    "func": "const crypto = global.get('cryptoLib');\nconst SECRET='123456789';\nfunction userFromReq(req){\n  const cookies=(req.headers.cookie||'').split(';').map(c=>c.trim());\n  const tok=(cookies.find(c=>c.startsWith('session='))||'').slice(8);\n  const parts=tok.split('.'); const payload=parts[0], sig=parts[1];\n  if(!payload||!sig) return null;\n  const good=crypto.createHmac('sha256',SECRET).update(payload).digest('hex');\n  if(good!==sig) return null;\n  const dec=Buffer.from(payload,'base64').toString().split('|');\n  if(Date.now()>=Number(dec[1])) return null;\n  return dec[0];\n}\nconst user = userFromReq(msg.req) || '__none__';\nmsg.params = { $u: user };\nreturn msg;",
+    "outputs": 1,
+    "timeout": "",
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 390,
+    "y": 1030,
+    "wires": [
+      [
+        "sqlite_api_daily"
+      ]
+    ]
+  },
+  {
+    "id": "sqlite_api_daily",
+    "type": "sqlite",
+    "z": "tab_auth",
+    "mydb": "db_users",
+    "sqlquery": "prepared",
+    "sql": "SELECT zi, consum_kwh, cost_lei FROM daily WHERE username = $u ORDER BY zi DESC",
+    "name": "select daily user",
+    "x": 620,
+    "y": 1030,
+    "wires": [
+      [
+        "resp_api_daily"
+      ]
+    ]
+  },
+  {
+    "id": "resp_api_daily",
+    "type": "http response",
+    "z": "tab_auth",
+    "name": "",
+    "statusCode": "",
+    "headers": {},
+    "x": 850,
+    "y": 1030,
+    "wires": []
+  }
+]

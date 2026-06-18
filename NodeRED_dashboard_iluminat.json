@@ -1,0 +1,858 @@
+[
+    {
+        "id": "8cc612c1ed61868c",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "c303a086ee358e34",
+        "type": "mqtt in",
+        "z": "8cc612c1ed61868c",
+        "name": "Camera 1 Status",
+        "topic": "home/cam1/status",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "broker_esp32",
+        "inputs": 0,
+        "x": 100,
+        "y": 500,
+        "wires": [
+            [
+                "4fb1107ad0cb060f"
+            ]
+        ]
+    },
+    {
+        "id": "b4245aec98038877",
+        "type": "mqtt in",
+        "z": "8cc612c1ed61868c",
+        "name": "Camera 2 Status",
+        "topic": "home/cam2/status",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "broker_esp32",
+        "inputs": 0,
+        "x": 300,
+        "y": 380,
+        "wires": [
+            [
+                "189bd522449c8840"
+            ]
+        ]
+    },
+    {
+        "id": "6c775fba9b3d72be",
+        "type": "mqtt in",
+        "z": "8cc612c1ed61868c",
+        "name": "INA219 Consum",
+        "topic": "home/power/ina219",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "broker_esp32",
+        "inputs": 0,
+        "x": 480,
+        "y": 660,
+        "wires": [
+            [
+                "fedac26e2fc5260f"
+            ]
+        ]
+    },
+    {
+        "id": "4fb1107ad0cb060f",
+        "type": "function",
+        "z": "8cc612c1ed61868c",
+        "name": "Parseaza Camera 1",
+        "func": "var d = msg.payload;\nflow.set('cam1', d);\n\n// Trimite mesaje separate pentru fiecare widget\nvar msgs = [];\n\n// Stare lumina\nmsgs.push({topic:'cam1_on',    payload: d.on ? 'PORNITA' : 'OPRITA'});\nmsgs.push({topic:'cam1_locked', payload: d.locked ? 'DA' : 'NU'});\nmsgs.push({topic:'cam1_motion', payload: d.motion ? 'DA' : 'NU'});\nmsgs.push({topic:'cam1_pir',    payload: d.pir_raw ? 'ACTIV' : 'INACTIV'});\nmsgs.push({topic:'cam1_ldr',    payload: d.ldr});\nmsgs.push({topic:'cam1_pwm',    payload: d.pwm_pct});\n\n// Culoare indicator lumina\nmsgs[0].color = d.on ? '#4CAF50' : '#9E9E9E';\nmsgs[2].color = d.motion ? '#FF9800' : '#9E9E9E';\n\nreturn [msgs[0], msgs[1], msgs[2], msgs[3], msgs[4], msgs[5]];",
+        "outputs": 6,
+        "x": 360,
+        "y": 500,
+        "wires": [
+            [
+                "b924748e2dc9ef69"
+            ],
+            [
+                "9c2a86071eba9e16"
+            ],
+            [
+                "ae21e7e90874e3ac"
+            ],
+            [
+                "5d61ee0b7491cd5b"
+            ],
+            [
+                "615215d8ed7c14d4",
+                "588cacdcb95a017b"
+            ],
+            [
+                "baedc5d5808dcf6b",
+                "606045b6562d0e55"
+            ]
+        ]
+    },
+    {
+        "id": "189bd522449c8840",
+        "type": "function",
+        "z": "8cc612c1ed61868c",
+        "name": "Parseaza Camera 2",
+        "func": "var d = msg.payload;\nflow.set('cam2', d);\n\nvar msgs = [];\nmsgs.push({topic:'cam2_on',    payload: d.on ? 'PORNITA' : 'OPRITA'});\nmsgs.push({topic:'cam2_locked', payload: d.locked ? 'DA' : 'NU'});\nmsgs.push({topic:'cam2_motion', payload: d.motion ? 'DA' : 'NU'});\nmsgs.push({topic:'cam2_pir',    payload: d.pir_raw ? 'ACTIV' : 'INACTIV'});\nmsgs.push({topic:'cam2_ldr',    payload: d.ldr});\nmsgs.push({topic:'cam2_pwm',    payload: d.pwm_pct});\n\nreturn [msgs[0], msgs[1], msgs[2], msgs[3], msgs[4], msgs[5]];",
+        "outputs": 6,
+        "x": 560,
+        "y": 400,
+        "wires": [
+            [
+                "4d0766d2fe90cfec"
+            ],
+            [
+                "e06ca5370efa245d"
+            ],
+            [
+                "c2339d82e2ff089f"
+            ],
+            [
+                "c98bc4d9be80d60d"
+            ],
+            [
+                "6d7dc8a7e24aa85f",
+                "dfb5c9d52a011fa3"
+            ],
+            [
+                "f091ea24d4b7d25d",
+                "87202771d2119dec"
+            ]
+        ]
+    },
+    {
+        "id": "fedac26e2fc5260f",
+        "type": "function",
+        "z": "8cc612c1ed61868c",
+        "name": "Parseaza INA219",
+        "func": "var d = msg.payload;\n\nvar msgs = [];\nmsgs.push({payload: parseFloat(d.voltage_V.toFixed(3))});\nmsgs.push({payload: parseFloat(d.current_mA.toFixed(2))});\nmsgs.push({payload: parseFloat(d.power_mW.toFixed(2))});\nmsgs.push({payload: parseFloat(d.shunt_mV.toFixed(3))});\n\nreturn [msgs[0], msgs[1], msgs[2], msgs[3]];",
+        "outputs": 4,
+        "x": 670,
+        "y": 540,
+        "wires": [
+            [
+                "7d8aefe30d3397a7",
+                "4996eec0f3032770"
+            ],
+            [
+                "6ce333f443ebf0eb",
+                "d7e4cfb9dae89687"
+            ],
+            [
+                "ed51e90dbf5986c1",
+                "cdb6a17c0165f8d0"
+            ],
+            [
+                "75e5f307e4b26ac5"
+            ]
+        ]
+    },
+    {
+        "id": "b924748e2dc9ef69",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam1",
+        "order": 1,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Stare Lumina",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 1450,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "9c2a86071eba9e16",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam1",
+        "order": 2,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Mod Blocat",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 1450,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "ae21e7e90874e3ac",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam1",
+        "order": 3,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Miscare Detectata",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 1310,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "5d61ee0b7491cd5b",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam1",
+        "order": 4,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Senzor PIR",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 790,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "615215d8ed7c14d4",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_cam1",
+        "order": 5,
+        "width": "6",
+        "height": "4",
+        "gtype": "gage",
+        "label": "Lumina Ambientala (LDR)",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 4095,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": 1000,
+        "seg2": 3000,
+        "x": 800,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "baedc5d5808dcf6b",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_cam1",
+        "order": 6,
+        "width": "6",
+        "height": "4",
+        "gtype": "donut",
+        "label": "Intensitate LED (%)",
+        "format": "{{value}}%",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#9E9E9E",
+            "#64B5F6",
+            "#1565C0"
+        ],
+        "seg1": 30,
+        "seg2": 70,
+        "x": 820,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "4d0766d2fe90cfec",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam2",
+        "order": 1,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Stare Lumina",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 850,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "e06ca5370efa245d",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam2",
+        "order": 2,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Mod Blocat",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 870,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "c2339d82e2ff089f",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam2",
+        "order": 3,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Miscare Detectata",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 1430,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "c98bc4d9be80d60d",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_cam2",
+        "order": 4,
+        "width": "3",
+        "height": "2",
+        "name": "",
+        "label": "Senzor PIR",
+        "format": "<big><b>{{msg.payload}}</b></big>",
+        "layout": "row-spread",
+        "x": 1190,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "6d7dc8a7e24aa85f",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_cam2",
+        "order": 5,
+        "width": "6",
+        "height": "4",
+        "gtype": "gage",
+        "label": "Lumina Ambientala (LDR)",
+        "format": "{{value}}",
+        "min": 0,
+        "max": 4095,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": 1000,
+        "seg2": 3000,
+        "x": 1260,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "f091ea24d4b7d25d",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_cam2",
+        "order": 6,
+        "width": "6",
+        "height": "4",
+        "gtype": "donut",
+        "label": "Intensitate LED (%)",
+        "format": "{{value}}%",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#9E9E9E",
+            "#64B5F6",
+            "#1565C0"
+        ],
+        "seg1": 30,
+        "seg2": 70,
+        "x": 1260,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "7d8aefe30d3397a7",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_power",
+        "order": 1,
+        "width": "4",
+        "height": "4",
+        "gtype": "gage",
+        "label": "Tensiune (V)",
+        "format": "{{value}} V",
+        "min": 0,
+        "max": 30,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": 10,
+        "seg2": 20,
+        "x": 1200,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "6ce333f443ebf0eb",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_power",
+        "order": 2,
+        "width": "4",
+        "height": "4",
+        "gtype": "gage",
+        "label": "Curent (mA)",
+        "format": "{{value}} mA",
+        "min": 0,
+        "max": 2000,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": 500,
+        "seg2": 1500,
+        "x": 1340,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "ed51e90dbf5986c1",
+        "type": "ui_gauge",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_power",
+        "order": 3,
+        "width": "4",
+        "height": "4",
+        "gtype": "gage",
+        "label": "Putere (mW)",
+        "format": "{{value}} mW",
+        "min": 0,
+        "max": 10000,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": 3000,
+        "seg2": 7000,
+        "x": 1480,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "75e5f307e4b26ac5",
+        "type": "ui_text",
+        "z": "8cc612c1ed61868c",
+        "group": "group_power",
+        "order": 4,
+        "width": "12",
+        "height": "2",
+        "name": "",
+        "label": "Tensiune Shunt (mV)",
+        "format": "<big><b>{{msg.payload}} mV</b></big>",
+        "layout": "row-spread",
+        "x": 1380,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "b4c92d157cee97a2",
+        "type": "ui_switch",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "label": "Blocare Camera 1 (dezactiveaza miscare)",
+        "tooltip": "",
+        "group": "group_control",
+        "order": 1,
+        "width": "6",
+        "height": "2",
+        "onvalue": "1",
+        "onvalueType": "str",
+        "onicon": "lock",
+        "oncolor": "#ca3838",
+        "offvalue": "0",
+        "offvalueType": "str",
+        "officon": "lock-open",
+        "offcolor": "#00b500",
+        "x": 860,
+        "y": 760,
+        "wires": [
+            [
+                "04eefc916e9c1227"
+            ]
+        ]
+    },
+    {
+        "id": "5381a2b482840ac8",
+        "type": "ui_switch",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "label": "Blocare Camera 2 (dezactiveaza miscare)",
+        "tooltip": "",
+        "group": "group_control",
+        "order": 2,
+        "width": "6",
+        "height": "2",
+        "onvalue": "1",
+        "onvalueType": "str",
+        "onicon": "lock",
+        "oncolor": "#ca3838",
+        "offvalue": "0",
+        "offvalueType": "str",
+        "officon": "lock-open",
+        "offcolor": "#00b500",
+        "x": 1000,
+        "y": 660,
+        "wires": [
+            [
+                "54a2c18c4f8689a3"
+            ]
+        ]
+    },
+    {
+        "id": "04eefc916e9c1227",
+        "type": "mqtt out",
+        "z": "8cc612c1ed61868c",
+        "name": "CMD Camera 1",
+        "topic": "home/cam1/cmd",
+        "qos": "0",
+        "retain": false,
+        "broker": "broker_esp32",
+        "x": 1140,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "54a2c18c4f8689a3",
+        "type": "mqtt out",
+        "z": "8cc612c1ed61868c",
+        "name": "CMD Camera 2",
+        "topic": "home/cam2/cmd",
+        "qos": "0",
+        "retain": false,
+        "broker": "broker_esp32",
+        "x": 1280,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "606045b6562d0e55",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 1,
+        "width": "6",
+        "height": "5",
+        "label": "Intensitate LED Camera 1 (%)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#1565C0",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1390,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "87202771d2119dec",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 2,
+        "width": "6",
+        "height": "5",
+        "label": "Intensitate LED Camera 2 (%)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "100",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#1565C0",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1230,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "588cacdcb95a017b",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 3,
+        "width": "6",
+        "height": "5",
+        "label": "Lumina Ambientala Camera 1 (LDR)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "4095",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#e6e600",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1210,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "dfb5c9d52a011fa3",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 4,
+        "width": "6",
+        "height": "5",
+        "label": "Lumina Ambientala Camera 2 (LDR)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "4095",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#e6e600",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1050,
+        "y": 120,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4996eec0f3032770",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 5,
+        "width": "4",
+        "height": "5",
+        "label": "Tensiune (V)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "30",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#00b500",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 970,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d7e4cfb9dae89687",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 6,
+        "width": "4",
+        "height": "5",
+        "label": "Curent (mA)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "2000",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#FF9800",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1310,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cdb6a17c0165f8d0",
+        "type": "ui_chart",
+        "z": "8cc612c1ed61868c",
+        "name": "",
+        "group": "group_grafice",
+        "order": 7,
+        "width": "4",
+        "height": "5",
+        "label": "Putere (mW)",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Fara date",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "10000",
+        "removeOlder": "5",
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "colors": [
+            "#ca3838",
+            "#aec6cf"
+        ],
+        "outputs": 1,
+        "x": 1170,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "broker_esp32",
+        "type": "mqtt-broker",
+        "name": "ESP32 Mosquitto",
+        "broker": "192.168.147.62",
+        "port": "1883",
+        "clientid": "nodered_dashboard",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "group_cam1",
+        "type": "ui_group",
+        "name": "Camera 1",
+        "tab": "tab_main",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "group_cam2",
+        "type": "ui_group",
+        "name": "Camera 2",
+        "tab": "tab_main",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "group_power",
+        "type": "ui_group",
+        "name": "Consum Energie (INA219)",
+        "tab": "tab_main",
+        "order": 3,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "group_control",
+        "type": "ui_group",
+        "name": "Control Manual",
+        "tab": "tab_main",
+        "order": 4,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "group_grafice",
+        "type": "ui_group",
+        "name": "Grafice",
+        "tab": "tab_main",
+        "order": 5,
+        "disp": true,
+        "width": "12",
+        "collapse": false
+    },
+    {
+        "id": "tab_main",
+        "type": "ui_tab",
+        "name": "Iluminat Inteligent",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]
